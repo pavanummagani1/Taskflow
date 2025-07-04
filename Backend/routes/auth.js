@@ -1,4 +1,5 @@
 import express from 'express';
+import dotenv from 'dotenv'
 import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
 import User from '../models/User.js';
@@ -6,7 +7,7 @@ import { authenticate } from '../middleware/auth.js';
 import { verifyFirebaseToken } from '../config/firebase.js';
 
 const router = express.Router();
-
+dotenv.config()
 // Register
 router.post('/register', [
   body('name').trim().notEmpty().withMessage('Name is required'),

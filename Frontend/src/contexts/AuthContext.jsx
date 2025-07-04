@@ -123,7 +123,7 @@ export function AuthProvider({ children }) {
 
   const register = async (userData) => {
     try {
-      const response = await axios.post('http//:localhost:3487/api/auth/register', userData);
+      const response = await axios.post('http://localhost:3487/api/auth/register', userData);
       
       if (response.data.success) {
         toast.success(`${userData.role === 'admin' ? 'Admin' : 'User'} account created successfully!`);
