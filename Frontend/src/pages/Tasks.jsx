@@ -28,7 +28,7 @@ function Tasks() {
 
   const fetchTasks = async () => {
     try {
-      const response = await axios.get('/api/tasks');
+      const response = await axios.get('http://localhost:3487/api/tasks');
       setTasks(response.data.tasks);
     } catch (error) {
       console.error('Error fetching tasks:', error);
@@ -122,7 +122,7 @@ function Tasks() {
     const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
     
     try {
-      await axios.put(`/api/tasks/${taskId}`, { status: newStatus });
+      await axios.put(`http://localhost:3487/api/tasks/${taskId}`, { status: newStatus });
       setTasks(tasks.map(task => 
         task._id === taskId ? { ...task, status: newStatus } : task
       ));

@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Mail, Lock, LogIn } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useAuth } from '../contexts/AuthContext';
+import { Shield, Mail, Lock } from 'lucide-react';
 
 export default function AdminLogin() {
   const [formData, setFormData] = useState({
@@ -18,7 +17,7 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
-      const success = await loginWithEmail(formData.email, formData.password, true); // true for admin login
+      const success = await loginWithEmail(formData.email, formData.password, true);
       if (success) {
         navigate('/admin');
       }
@@ -29,93 +28,86 @@ export default function AdminLogin() {
     }
   };
 
-  const handleUserLogin = () => {
-    navigate('/login');
-  };
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2260%22 height=%2260%22 viewBox=%220 0 60 60%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill=%22none%22 fill-rule=%22evenodd%22%3E%3Cg fill=%22%239C92AC%22 fill-opacity=%220.1%22%3E%3Ccircle cx=%2230%22 cy=%2230%22 r=%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20"></div>
-      
-      <div className="max-w-md w-full mx-4 relative">
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-indigo-100">
+      <div className="max-w-md w-full mx-4">
+        <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
-            <div className="mx-auto w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mb-4 shadow-lg">
-              <Shield className="w-8 h-8 text-white" />
+            <div className="mx-auto w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center mb-4">
+              <Shield className="w-6 h-6 text-white" />
             </div>
-            <h2 className="text-3xl font-bold text-white mb-2">
-              Admin Portal
-            </h2>
-            <p className="text-gray-300">
-              Secure access to administrative controls
-            </p>
+            <h2 className="text-3xl font-bold text-gray-900">Admin Portal</h2>
+            <p className="text-gray-600 mt-2">Administrator access to TaskFlow</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-200 mb-2">
-                Admin Email
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Admin Email Address
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 <input
                   type="email"
                   required
-                  className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-gray-400 backdrop-blur-sm"
-                  placeholder="Enter admin email"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="Enter your admin email"
                   value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-200 mb-2">
-                Password
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Admin Password
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 <input
                   type="password"
                   required
-                  className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-gray-400 backdrop-blur-sm"
-                  placeholder="Enter password"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="Enter your admin password"
                   value={formData.password}
-                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 />
               </div>
             </div>
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-4 rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+              className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors"
             >
-              {loading ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  Signing In...
-                </div>
-              ) : (
-                <div className="flex items-center justify-center">
-                  <LogIn className="w-5 h-5 mr-2" />
-                  Sign In to Admin Portal
-                </div>
-              )}
+              {loading ? 'Signing In...' : 'Sign In as Administrator'}
             </button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-white/20">
-            <div className="text-center">
-              <p className="text-gray-300 text-sm mb-3">
-                Not an admin?
-              </p>
-              <button
-                onClick={handleUserLogin}
-                className="text-purple-300 hover:text-purple-200 font-medium text-sm transition-colors"
+          <div className="mt-8 p-4 bg-purple-50 rounded-lg">
+            <h3 className="text-sm font-medium text-purple-900 mb-2">Administrator Access</h3>
+            <p className="text-sm text-purple-700">
+              This portal is restricted to system administrators only.
+              If you're a regular user, please use the main login page.
+            </p>
+            <div className="mt-3">
+              <a
+                href="/login"
+                className="text-sm text-purple-600 hover:text-purple-800 font-medium"
               >
-                Access User Portal →
-              </button>
+                Go to User Login →
+              </a>
+            </div>
+          </div>
+
+          <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex items-start gap-2">
+              <Shield className="h-4 w-4 text-amber-600 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-medium text-amber-900">Security Notice</h4>
+                <p className="text-xs text-amber-700 mt-1">
+                  Admin accounts have elevated privileges. Ensure you're logging in from a secure device.
+                </p>
+              </div>
             </div>
           </div>
 

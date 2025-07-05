@@ -1,23 +1,34 @@
 import nodemailer from 'nodemailer';
 
-// Create transporter for sending emails
 export const createTransporter = () => {
-  return nodemailer.createTransporter({
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.warn('Email configuration not found. Email functionality will be disabled.');
+    return null;
+  }
+
+  return nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: process.env.SMTP_PORT || 587,
-    secure: false, // true for 465, false for other ports
+    port: parseInt(process.env.SMTP_PORT) || 587,
+    secure: false, 
     auth: {
-      user: process.env.SMTP_USER, // Your email
-      pass: process.env.SMTP_PASS, // Your email password or app password
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
     },
   });
 };
 
-// Send welcome email with login credentials
 export const sendWelcomeEmail = async (userEmail, userName, tempPassword) => {
   try {
     const transporter = createTransporter();
-    
+
+    if (!transporter) {
+      console.warn(`Email not configured. Would have sent welcome email to ${userEmail}`);
+      console.log(`Login credentials for ${userName}:`);
+      console.log(`Email: ${userEmail}`);
+      console.log(`Password: ${tempPassword}`);
+      return { success: true, messageId: 'email-not-configured' };
+    }
+
     const mailOptions = {
       from: process.env.SMTP_USER || 'noreply@taskflow.com',
       to: userEmail,
@@ -34,40 +45,52 @@ export const sendWelcomeEmail = async (userEmail, userName, tempPassword) => {
             .credentials { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea; }
             .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
             .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+            .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 15px 0; }
           </style>
         </head>
         <body>
           <div class="container">
             <div class="header">
-              <h1>Welcome to TaskFlow!</h1>
+              <h1>🎉 Welcome to Smart Task Manager!</h1>
               <p>Your account has been created successfully</p>
             </div>
             <div class="content">
               <h2>Hello ${userName},</h2>
-              <p>Your administrator has created an account for you on TaskFlow. You can now start managing your tasks efficiently!</p>
-              
+              <p>Your administrator has created an account for you on Smart Task Manager. You can now start managing your tasks efficiently!</p>
+
               <div class="credentials">
-                <h3>Your Login Credentials:</h3>
+                <h3>🔑 Your Login Credentials:</h3>
                 <p><strong>Email:</strong> ${userEmail}</p>
-                <p><strong>Temporary Password:</strong> <code style="background: #e9ecef; padding: 4px 8px; border-radius: 4px;">${tempPassword}</code></p>
+                <p><strong>Temporary Password:</strong> <code style="background: #e9ecef; padding: 4px 8px; border-radius: 4px; font-size: 16px;">${tempPassword}</code></p>
               </div>
-              
-              <p><strong>Important:</strong> Please change your password after your first login for security purposes.</p>
-              
-              <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login" class="button">Login to TaskFlow</a>
-              
-              <h3>Getting Started:</h3>
+
+              <div class="warning">
+                <p><strong>⚠️ Important Security Notice:</strong></p>
+                <ul>
+                  <li>Please change your password after your first login</li>
+                  <li>Keep your login credentials secure</li>
+                  <li>Do not share your password with anyone</li>
+                </ul>
+              </div>
+
+              <div style="text-align: center;">
+                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login" class="button">🚀 Login to Smart Task Manager</a>
+              </div>
+
+              <h3>✨ Getting Started:</h3>
               <ul>
-                <li>Create and organize your tasks</li>
-                <li>Set due dates and priorities</li>
-                <li>Track your progress with analytics</li>
-                <li>Export your data when needed</li>
+                <li>📝 Create and organize your tasks</li>
+                <li>📅 Set due dates and priorities</li>
+                <li>📊 Track your progress with analytics</li>
+                <li>📤 Export your data when needed</li>
               </ul>
-              
+
               <p>If you have any questions or need assistance, please contact your administrator.</p>
+              <p>Happy task managing!</p>
+              <p><strong>The Smart Task Manager Team</strong></p>
             </div>
             <div class="footer">
-              <p>This email was sent from TaskFlow Task Management System</p>
+              <p>This email was sent from Smart Task Manager, The Task Management System</p>
               <p>Please do not reply to this email</p>
             </div>
           </div>
@@ -77,10 +100,25 @@ export const sendWelcomeEmail = async (userEmail, userName, tempPassword) => {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log('Welcome email sent:', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('Error sending welcome email:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Test email configuration
+export const testEmailConfig = async () => {
+  try {
+    const transporter = createTransporter();
+    if (!transporter) {
+      return { success: false, error: 'Email configuration not found' };
+    }
+
+    await transporter.verify();
+    console.log('✅ Email configuration is valid');
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Email configuration test failed:', error);
     return { success: false, error: error.message };
   }
 };

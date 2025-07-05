@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Eye, UserCheck, UserX, Trash2, Mail, User, Shield } from 'lucide-react';
+import { Plus, Search, UserCheck, UserX, Trash2, Mail, User, Shield, X, AlertCircle, CheckCircle } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -18,6 +18,7 @@ export default function UserManagement() {
     role: 'user'
   });
   const [formLoading, setFormLoading] = useState(false);
+  const [lastCreatedUser, setLastCreatedUser] = useState(null);
 
   useEffect(() => {
     fetchUsers();
@@ -44,9 +45,19 @@ export default function UserManagement() {
       
       if (response.data.success) {
         setUsers([response.data.user, ...users]);
+        setLastCreatedUser({
+          ...response.data.user,
+          tempPassword: 123456,
+          emailStatus: response.data.emailStatus
+        });
         setFormData({ name: '', email: '', role: 'user' });
         setShowCreateForm(false);
-        toast.success('User created successfully');
+        
+        if (response.data.emailStatus === 'sent') {
+          toast.success('User created successfully and welcome email sent!');
+        } else {
+          toast.success('User created successfully! Check console for login credentials.');
+        }
       }
     } catch (error) {
       console.error('Error creating user:', error);
@@ -105,7 +116,10 @@ export default function UserManagement() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
+          <p className="text-gray-600 mt-1">Create and manage user accounts for the system</p>
+        </div>
         <div className="flex gap-2">
           <ExportButtons 
             data={filteredUsers} 
@@ -119,6 +133,55 @@ export default function UserManagement() {
             <Plus className="h-4 w-4" />
             Add User
           </button>
+        </div>
+      </div>
+
+      {/* Last Created User Info */}
+      {lastCreatedUser && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="text-sm font-medium text-green-900">User Created Successfully!</h3>
+              <div className="mt-2 text-sm text-green-700">
+                <p><strong>Name:</strong> {lastCreatedUser.name}</p>
+                <p><strong>Email:</strong> {lastCreatedUser.email}</p>
+                <p><strong>Role:</strong> {lastCreatedUser.role}</p>
+                {lastCreatedUser.tempPassword && (
+                  <p><strong>Temporary Password:</strong> <code className="bg-green-100 px-2 py-1 rounded">{lastCreatedUser.tempPassword}</code></p>
+                )}
+                <p><strong>Email Status:</strong> 
+                  <span className={`ml-1 px-2 py-1 rounded text-xs ${
+                    lastCreatedUser.emailStatus === 'sent' 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {lastCreatedUser.emailStatus === 'sent' ? 'Email Sent' : 'Email Not Configured'}
+                  </span>
+                </p>
+              </div>
+              <button
+                onClick={() => setLastCreatedUser(null)}
+                className="mt-2 text-sm text-green-600 hover:text-green-800"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Info Card */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-start gap-3">
+          <Mail className="h-5 w-5 text-blue-600 mt-0.5" />
+          <div>
+            <h3 className="text-sm font-medium text-blue-900">User Account Creation</h3>
+            <p className="text-sm text-blue-700 mt-1">
+              When you create a new user account, they will automatically receive a welcome email with their login credentials 
+              (if email is configured). Users can then sign in using their email and the temporary password provided.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -169,11 +232,14 @@ export default function UserManagement() {
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   />
                 </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Login credentials will be sent to this email address (if configured)
+                </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Role
+                  Account Type
                 </label>
                 <div className="relative">
                   <Shield className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
@@ -189,9 +255,21 @@ export default function UserManagement() {
                 <p className="text-xs text-gray-500 mt-1">
                   {formData.role === 'user' 
                     ? 'Regular user with task management capabilities' 
-                    : 'Administrator with full system access'
+                    : 'Administrator with full system access and user management'
                   }
                 </p>
+              </div>
+
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-yellow-800">
+                      <strong>Note:</strong> A secure temporary password will be automatically generated. 
+                      The user should change it after their first login for security.
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="flex justify-end space-x-3 pt-4">
@@ -205,8 +283,9 @@ export default function UserManagement() {
                 <button
                   type="submit"
                   disabled={formLoading}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
                 >
+                  {formLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
                   {formLoading ? 'Creating...' : 'Create User'}
                 </button>
               </div>
@@ -273,7 +352,10 @@ export default function UserManagement() {
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Joined
+                  Last Login
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Created
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -317,6 +399,9 @@ export default function UserManagement() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {user.lastLogin ? format(new Date(user.lastLogin), 'MMM dd, yyyy') : 'Never'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {format(new Date(user.createdAt), 'MMM dd, yyyy')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -328,12 +413,14 @@ export default function UserManagement() {
                             ? 'text-red-600 hover:text-red-900' 
                             : 'text-green-600 hover:text-green-900'
                         }`}
+                        title={user.status === 'active' ? 'Deactivate user' : 'Activate user'}
                       >
                         {user.status === 'active' ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                       </button>
                       <button
                         onClick={() => handleDeleteUser(user._id)}
                         className="text-red-600 hover:text-red-900"
+                        title="Delete user"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -347,7 +434,9 @@ export default function UserManagement() {
         
         {filteredUsers.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500">No users found</p>
+            <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg">No users found</p>
+            <p className="text-gray-400 text-sm">Try adjusting your search or filter criteria</p>
           </div>
         )}
       </div>
