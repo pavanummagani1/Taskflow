@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Edit, Trash2, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -27,6 +27,7 @@ function Tasks() {
   }, [tasks, searchTerm, filterStatus, filterCategory, sortBy, sortOrder]);
 
   const fetchTasks = async () => {
+    setLoading(true);
     try {
       const response = await axios.get('https://taskflow-wxqj.onrender.com/api/tasks');
       setTasks(response.data.tasks);
@@ -41,25 +42,21 @@ function Tasks() {
   const filterAndSortTasks = () => {
     let filtered = [...tasks];
 
-    // Apply search filter
     if (searchTerm) {
-      filtered = filtered.filter(task => 
+      filtered = filtered.filter(task =>
         task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         task.description.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    // Apply status filter
     if (filterStatus !== 'all') {
       filtered = filtered.filter(task => task.status === filterStatus);
     }
 
-    // Apply category filter
     if (filterCategory !== 'all') {
       filtered = filtered.filter(task => task.category === filterCategory);
     }
 
-    // Apply sorting
     filtered.sort((a, b) => {
       let aValue, bValue;
 
@@ -85,11 +82,7 @@ function Tasks() {
           bValue = b.createdAt;
       }
 
-      if (sortOrder === 'asc') {
-        return aValue > bValue ? 1 : -1;
-      } else {
-        return aValue < bValue ? 1 : -1;
-      }
+      return sortOrder === 'asc' ? (aValue > bValue ? 1 : -1) : (aValue < bValue ? 1 : -1);
     });
 
     setFilteredTasks(filtered);
@@ -109,7 +102,7 @@ function Tasks() {
     if (window.confirm('Are you sure you want to delete this task?')) {
       try {
         await axios.delete(`https://taskflow-wxqj.onrender.com/api/tasks/${taskId}`);
-        setTasks(tasks.filter(task => task._id !== taskId));
+        await fetchTasks();
         toast.success('Task deleted successfully');
       } catch (error) {
         console.error('Error deleting task:', error);
@@ -120,12 +113,17 @@ function Tasks() {
 
   const handleToggleStatus = async (taskId, currentStatus) => {
     const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
-    
+    const taskToUpdate = tasks.find(task => task._id === taskId);
+    if (!taskToUpdate) return;
+
     try {
-      await axios.put(`https://taskflow-wxqj.onrender.com/api/tasks/${taskId}`, { status: newStatus });
-      setTasks(tasks.map(task => 
-        task._id === taskId ? { ...task, status: newStatus } : task
-      ));
+      const updatedTask = { ...taskToUpdate, status: newStatus };
+      await axios.put(`https://taskflow-wxqj.onrender.com/api/tasks/${taskId}`, updatedTask);
+
+      // Reset filter to show all statuses after update
+      setFilterStatus('all');
+
+      await fetchTasks();
       toast.success(`Task marked as ${newStatus}`);
     } catch (error) {
       console.error('Error updating task status:', error);
@@ -133,41 +131,27 @@ function Tasks() {
     }
   };
 
-  const handleTaskSaved = (savedTask) => {
-    if (editingTask) {
-      setTasks(tasks.map(task => 
-        task._id === savedTask._id ? savedTask : task
-      ));
-    } else {
-      setTasks([...tasks, savedTask]);
-    }
+  const handleTaskSaved = async () => {
+    await fetchTasks();
     setShowModal(false);
     setEditingTask(null);
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'completed':
-        return <CheckCircle className="h-5 w-5 text-green-600" />;
-      case 'pending':
-        return <Clock className="h-5 w-5 text-yellow-600" />;
-      case 'overdue':
-        return <AlertCircle className="h-5 w-5 text-red-600" />;
-      default:
-        return <Clock className="h-5 w-5 text-gray-600" />;
+      case 'completed': return <CheckCircle className="h-5 w-5 text-green-600" />;
+      case 'pending': return <Clock className="h-5 w-5 text-yellow-600" />;
+      case 'overdue': return <AlertCircle className="h-5 w-5 text-red-600" />;
+      default: return <Clock className="h-5 w-5 text-gray-600" />;
     }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'overdue':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'overdue': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -187,11 +171,7 @@ function Tasks() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-3xl font-bold text-gray-900">Tasks</h1>
         <div className="flex gap-2">
-          <ExportButtons 
-            data={filteredTasks} 
-            filename="tasks"
-            type="tasks"
-          />
+          <ExportButtons data={filteredTasks} filename="tasks" type="tasks" />
           <button
             onClick={handleCreateTask}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
@@ -205,7 +185,6 @@ function Tasks() {
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <input
@@ -217,7 +196,6 @@ function Tasks() {
             />
           </div>
 
-          {/* Status Filter */}
           <select
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             value={filterStatus}
@@ -229,7 +207,6 @@ function Tasks() {
             <option value="overdue">Overdue</option>
           </select>
 
-          {/* Category Filter */}
           <select
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             value={filterCategory}
@@ -241,7 +218,6 @@ function Tasks() {
             ))}
           </select>
 
-          {/* Sort By */}
           <select
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             value={sortBy}
@@ -253,7 +229,6 @@ function Tasks() {
             <option value="category">Category</option>
           </select>
 
-          {/* Sort Order */}
           <select
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             value={sortOrder}
@@ -265,32 +240,22 @@ function Tasks() {
         </div>
       </div>
 
-      {/* Tasks List */}
+      {/* Tasks Table */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         {filteredTasks.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Task
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Category
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Due Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Task</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredTasks.map((task) => (
+                {filteredTasks.map(task => (
                   <tr key={task._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
@@ -313,22 +278,13 @@ function Tasks() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleToggleStatus(task._id, task.status)}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
+                        <button onClick={() => handleToggleStatus(task._id, task.status)} className="text-blue-600 hover:text-blue-900">
                           {getStatusIcon(task.status)}
                         </button>
-                        <button
-                          onClick={() => handleEditTask(task)}
-                          className="text-indigo-600 hover:text-indigo-900"
-                        >
+                        <button onClick={() => handleEditTask(task)} className="text-indigo-600 hover:text-indigo-900">
                           <Edit className="h-4 w-4" />
                         </button>
-                        <button
-                          onClick={() => handleDeleteTask(task._id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
+                        <button onClick={() => handleDeleteTask(task._id)} className="text-red-600 hover:text-red-900">
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
@@ -345,7 +301,7 @@ function Tasks() {
         )}
       </div>
 
-      {/* Task Modal */}
+      {/* Modal */}
       {showModal && (
         <TaskModal
           task={editingTask}
@@ -356,4 +312,5 @@ function Tasks() {
     </div>
   );
 }
-export default Tasks
+
+export default Tasks;

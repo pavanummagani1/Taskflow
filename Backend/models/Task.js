@@ -29,10 +29,10 @@ const taskSchema = new mongoose.Schema({
     enum: ['low', 'medium', 'high'],
     default: 'medium',
   },
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+  userEmail: { 
+    type: String,
     required: true,
+    index: true,
   },
   completedAt: {
     type: Date,
