@@ -261,6 +261,7 @@ export default function Dashboard() {
   const [categoryData, setCategoryData] = useState([]);
   const [statusData, setStatusData] = useState([]);
   const [loading, setLoading] = useState(true);
+  console.log(tasks)
 
   useEffect(() => {
     fetchDashboardData();
