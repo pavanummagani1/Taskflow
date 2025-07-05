@@ -41,9 +41,9 @@ export default function TaskModal({ task, onClose, onSave }) {
 
       let response;
       if (task) {
-        response = await axios.put(`http://localhost:3487/api/tasks/${task._id}`, taskData);
+        response = await axios.put(`https://taskflow-wxqj.onrender.com/api/tasks/${task._id}`, taskData);
       } else {
-        response = await axios.post('http://localhost:3487/api/tasks', taskData);
+        response = await axios.post('https://taskflow-wxqj.onrender.com/api/tasks', taskData);
       }
 
       if (response.data.success) {

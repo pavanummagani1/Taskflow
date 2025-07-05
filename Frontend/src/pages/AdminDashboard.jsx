@@ -30,10 +30,10 @@ export default function AdminDashboard() {
   const fetchAdminData = async () => {
     try {
       const [usersRes, tasksRes, auditRes, statsRes] = await Promise.all([
-        axios.get('http://localhost:3487/api/admin/users'),
-        axios.get('http://localhost:3487/api/admin/tasks'),
-        axios.get('http://localhost:3487/api/admin/audit-logs'),
-        axios.get('http://localhost:3487/api/admin/stats')
+        axios.get('https://taskflow-wxqj.onrender.com/api/admin/users'),
+        axios.get('https://taskflow-wxqj.onrender.com/api/admin/tasks'),
+        axios.get('https://taskflow-wxqj.onrender.com/api/admin/audit-logs'),
+        axios.get('https://taskflow-wxqj.onrender.com/api/admin/stats')
       ]);
 
       setUsers(usersRes.data.users);
@@ -72,7 +72,7 @@ export default function AdminDashboard() {
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
     
     try {
-      await axios.put(`http://localhost:3487/api/admin/users/${userId}/status`, { status: newStatus });
+      await axios.put(`https://taskflow-wxqj.onrender.com/api/admin/users/${userId}/status`, { status: newStatus });
       setUsers(users.map(user => 
         user._id === userId ? { ...user, status: newStatus } : user
       ));
@@ -86,7 +86,7 @@ export default function AdminDashboard() {
   const handleDeleteUser = async (userId) => {
     if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
       try {
-        await axios.delete(`http://localhost:3487/api/admin/users/${userId}`);
+        await axios.delete(`https://taskflow-wxqj.onrender.com/api/admin/users/${userId}`);
         setUsers(users.filter(user => user._id !== userId));
         toast.success('User deleted successfully');
       } catch (error) {

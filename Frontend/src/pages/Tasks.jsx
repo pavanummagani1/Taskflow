@@ -28,7 +28,7 @@ function Tasks() {
 
   const fetchTasks = async () => {
     try {
-      const response = await axios.get('http://localhost:3487/api/tasks');
+      const response = await axios.get('https://taskflow-wxqj.onrender.com/api/tasks');
       setTasks(response.data.tasks);
     } catch (error) {
       console.error('Error fetching tasks:', error);
@@ -108,7 +108,7 @@ function Tasks() {
   const handleDeleteTask = async (taskId) => {
     if (window.confirm('Are you sure you want to delete this task?')) {
       try {
-        await axios.delete(`http://localhost:3487/api/tasks/${taskId}`);
+        await axios.delete(`https://taskflow-wxqj.onrender.com/api/tasks/${taskId}`);
         setTasks(tasks.filter(task => task._id !== taskId));
         toast.success('Task deleted successfully');
       } catch (error) {
@@ -122,7 +122,7 @@ function Tasks() {
     const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
     
     try {
-      await axios.put(`http://localhost:3487/api/tasks/${taskId}`, { status: newStatus });
+      await axios.put(`https://taskflow-wxqj.onrender.com/api/tasks/${taskId}`, { status: newStatus });
       setTasks(tasks.map(task => 
         task._id === taskId ? { ...task, status: newStatus } : task
       ));

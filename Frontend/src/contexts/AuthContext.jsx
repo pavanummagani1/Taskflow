@@ -32,7 +32,7 @@ export function AuthProvider({ children }) {
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           
           // Get user data from backend
-          const response = await axios.get('http://localhost:3487/api/auth/profile');
+          const response = await axios.get('https://taskflow-wxqj.onrender.com/api/auth/profile');
           setUser(response.data.user);
         } catch (error) {
           console.error('Error fetching user profile:', error);
@@ -54,7 +54,7 @@ export function AuthProvider({ children }) {
 
   const fetchUserProfile = async () => {
     try {
-      const response = await axios.get('http://localhost:3487/api/auth/profile');
+      const response = await axios.get('https://taskflow-wxqj.onrender.com/api/auth/profile');
       setUser(response.data.user);
     } catch (error) {
       console.error('Error fetching user profile:', error);
@@ -72,7 +72,7 @@ export function AuthProvider({ children }) {
       const token = await result.user.getIdToken();
       
       // Send token to backend for verification and user creation
-      const response = await axios.post('http://localhost:3487/api/auth/google', { token });
+      const response = await axios.post('https://taskflow-wxqj.onrender.com/api/auth/google', { token });
       
       if (response.data.success) {
         toast.success('Logged in successfully!');
@@ -91,7 +91,7 @@ export function AuthProvider({ children }) {
 
   const loginWithEmail = async (email, password, isAdminLogin = false) => {
     try {
-      const response = await axios.post('http://localhost:3487/api/auth/login', { email, password });
+      const response = await axios.post('https://taskflow-wxqj.onrender.com/api/auth/login', { email, password });
       
       if (response.data.success) {
         const { token, user: userData } = response.data;
@@ -123,7 +123,7 @@ export function AuthProvider({ children }) {
 
   const register = async (userData) => {
     try {
-      const response = await axios.post('http://localhost:3487/api/auth/register', userData);
+      const response = await axios.post('https://taskflow-wxqj.onrender.com/api/auth/register', userData);
       
       if (response.data.success) {
         toast.success(`${userData.role === 'admin' ? 'Admin' : 'User'} account created successfully!`);

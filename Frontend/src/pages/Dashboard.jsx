@@ -29,8 +29,8 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       const [tasksRes, statsRes] = await Promise.all([
-        axios.get('http://localhost:3487/api/tasks'),
-        axios.get('http://localhost:3487/api/tasks/stats')
+        axios.get('https://taskflow-wxqj.onrender.com/api/tasks'),
+        axios.get('https://taskflow-wxqj.onrender.com/api/tasks/stats')
       ]);
 
       const allTasks = tasksRes.data.tasks;
