@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth, googleProvider } from '../config/firebase';
-import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
+import { signInWithPopup } from 'firebase/auth';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
+const BASE_URL = process.env.REACT_APP_BASE_URL;
 const AuthContext = createContext();
 
 export function useAuth() {
@@ -15,7 +16,6 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing token
     const token = localStorage.getItem('token');
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -27,7 +27,7 @@ export function AuthProvider({ children }) {
 
   const fetchUserProfile = async () => {
     try {
-      const response = await axios.get('https://taskflow-wxqj.onrender.com/api/auth/profile');
+      const response = await axios.get(`${BASE_URL}/api/auth/profile`);
       if (response.data.success) {
         setUser(response.data.user);
       }
@@ -44,10 +44,9 @@ export function AuthProvider({ children }) {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const token = await result.user.getIdToken();
-      
-      // Send token to backend for verification and user creation
-      const response = await axios.post('https://taskflow-wxqj.onrender.com/api/auth/google', { token });
-      
+
+      const response = await axios.post(`${BASE_URL}/api/auth/google`, { token });
+
       if (response.data.success) {
         const { token: jwtToken, user } = response.data;
         localStorage.setItem('token', jwtToken);
@@ -65,8 +64,8 @@ export function AuthProvider({ children }) {
 
   const loginWithEmail = async (email, password) => {
     try {
-      const response = await axios.post('https://taskflow-wxqj.onrender.com/api/auth/login', { email, password });
-      
+      const response = await axios.post(`${BASE_URL}/api/auth/login`, { email, password });
+
       if (response.data.success) {
         const { token, user } = response.data;
         localStorage.setItem('token', token);
@@ -84,8 +83,8 @@ export function AuthProvider({ children }) {
 
   const register = async (userData) => {
     try {
-      const response = await axios.post('https://taskflow-wxqj.onrender.com/api/auth/register', userData);
-      
+      const response = await axios.post(`${BASE_URL}/api/auth/register`, userData);
+
       if (response.data.success) {
         const { token, user } = response.data;
         localStorage.setItem('token', token);

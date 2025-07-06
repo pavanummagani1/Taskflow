@@ -6,6 +6,8 @@ import { format } from 'date-fns';
 import TaskModal from '../components/TaskModal';
 import ExportButtons from '../components/ExportButtons';
 
+const BASE_URL = process.env.REACT_APP_BASE_URL;
+
 export default function Tasks() {
   const [tasks, setTasks] = useState([]);
   const [filteredTasks, setFilteredTasks] = useState([]);
@@ -29,7 +31,7 @@ export default function Tasks() {
   const fetchTasks = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('https://taskflow-wxqj.onrender.com/api/tasks?limit=1000');
+      const response = await axios.get(`${BASE_URL}/api/tasks?limit=1000`);
       if (response.data.success) {
         setTasks(response.data.tasks || []);
       }
@@ -111,7 +113,7 @@ export default function Tasks() {
   const handleDeleteTask = async (taskId) => {
     if (window.confirm('Are you sure you want to delete this task?')) {
       try {
-        const response = await axios.delete(`https://taskflow-wxqj.onrender.com/api/tasks/${taskId}`);
+        const response = await axios.delete(`${BASE_URL}/api/tasks/${taskId}`);
         if (response.data.success) {
           // Remove the deleted task from the state
           setTasks(prevTasks => prevTasks.filter(task => task._id !== taskId));
@@ -128,7 +130,7 @@ export default function Tasks() {
     const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
     
     try {
-      const response = await axios.put(`https://taskflow-wxqj.onrender.com/api/tasks/${taskId}`, { status: newStatus });
+      const response = await axios.put(`${BASE_URL}/api/tasks/${taskId}`, { status: newStatus });
       if (response.data.success) {
         // Update the task in the state with the new status and completedAt
         setTasks(prevTasks => 

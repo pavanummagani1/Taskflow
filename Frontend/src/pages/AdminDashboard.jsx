@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
 import ExportButtons from '../components/ExportButtons';
 
+const BASE_URL = process.env.REACT_APP_BASE_URL;
 export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -31,10 +32,10 @@ export default function AdminDashboard() {
   const fetchAdminData = async () => {
     try {
     const [usersRes, tasksRes, auditRes, statsRes] = await Promise.all([
-      axios.get('https://taskflow-wxqj.onrender.com/api/admin/users'),
-      axios.get('https://taskflow-wxqj.onrender.com/api/admin/tasks'),
-      axios.get('https://taskflow-wxqj.onrender.com/api/admin/audit-logs?populate=user'),
-      axios.get('https://taskflow-wxqj.onrender.com/api/admin/stats')
+        axios.get(`${BASE_URL}/api/admin/users`),
+        axios.get(`${BASE_URL}/api/admin/tasks`),
+        axios.get(`${BASE_URL}/api/admin/audit-logs?populate=user`),
+        axios.get(`${BASE_URL}/api/admin/stats`)
     ]);
 
     const processedLogs = auditRes.data.logs.map(log => {
@@ -81,7 +82,7 @@ export default function AdminDashboard() {
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
     
     try {
-      await axios.put(`https://taskflow-wxqj.onrender.com/api/admin/users/${userId}/status`, { status: newStatus });
+      await axios.put(`${BASE_URL}/api/admin/users/${userId}/status`, { status: newStatus });
       setUsers(users.map(user => 
         user._id === userId ? { ...user, status: newStatus } : user
       ));
@@ -95,7 +96,7 @@ export default function AdminDashboard() {
   const handleDeleteUser = async (userId) => {
     if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
       try {
-        await axios.delete(`https://taskflow-wxqj.onrender.com/api/admin/users/${userId}`);
+        await axios.delete(`${BASE_URL}/api/admin/users/${userId}`);
         setUsers(users.filter(user => user._id !== userId));
         toast.success('User deleted successfully');
       } catch (error) {

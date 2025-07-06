@@ -6,6 +6,8 @@ import axios from 'axios';
 import { format, isToday, subDays, startOfDay, endOfDay } from 'date-fns';
 import ExportButtons from '../components/ExportButtons';
 
+const BASE_URL = process.env.REACT_APP_BASE_URL;
+
 export default function Dashboard() {
   const { user } = useAuth();
   const [stats, setStats] = useState({
@@ -28,8 +30,8 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       const [tasksRes, statsRes] = await Promise.all([
-        axios.get('https://taskflow-wxqj.onrender.com/api/tasks?limit=1000'),
-        axios.get('https://taskflow-wxqj.onrender.com/api/tasks/stats')
+        axios.get(`${BASE_URL}/api/tasks?limit=1000`),
+        axios.get(`${BASE_URL}/api/tasks/stats`)
       ]);
 
       const allTasks = tasksRes.data.tasks || [];

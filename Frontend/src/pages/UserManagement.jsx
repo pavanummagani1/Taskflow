@@ -5,6 +5,8 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import ExportButtons from '../components/ExportButtons';
 
+const BASE_URL = process.env.REACT_APP_BASE_URL;
+
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +28,7 @@ export default function UserManagement() {
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get('https://taskflow-wxqj.onrender.com/api/admin/users');
+      const response = await axios.get(`${BASE_URL}/api/admin/users`);
       setUsers(response.data.users);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -41,7 +43,7 @@ export default function UserManagement() {
     setFormLoading(true);
 
     try {
-      const response = await axios.post('https://taskflow-wxqj.onrender.com/api/admin/users', formData);
+      const response = await axios.post(`${BASE_URL}/api/admin/users`, formData);
       
       if (response.data.success) {
         setUsers([response.data.user, ...users]);
@@ -71,7 +73,7 @@ export default function UserManagement() {
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
     
     try {
-      await axios.put(`https://taskflow-wxqj.onrender.com/api/admin/users/${userId}/status`, { status: newStatus });
+      await axios.put(`${BASE_URL}/api/admin/users/${userId}/status`, { status: newStatus });
       setUsers(users.map(user => 
         user._id === userId ? { ...user, status: newStatus } : user
       ));
@@ -85,7 +87,7 @@ export default function UserManagement() {
   const handleDeleteUser = async (userId) => {
     if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
       try {
-        await axios.delete(`https://taskflow-wxqj.onrender.com/api/admin/users/${userId}`);
+        await axios.delete(`${BASE_URL}/api/admin/users/${userId}`)
         setUsers(users.filter(user => user._id !== userId));
         toast.success('User deleted successfully');
       } catch (error) {
