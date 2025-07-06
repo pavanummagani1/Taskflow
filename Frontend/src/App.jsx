@@ -34,29 +34,32 @@ function AppRoutes() {
   return (
     <Routes>
       {/* Public Routes */}
-      <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" replace />} />
-      <Route path="/admin/login" element={!user ? <AdminLogin /> : <Navigate to="/dashboard" replace />} />
+      <Route path="/login" element={!user ? <Login /> : user.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />} />
+      <Route path="/admin/login" element={!user ? <AdminLogin /> : user.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />} />
       
       {/* Default redirect */}
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<Navigate to={user?.role === 'admin' ? "/admin" : "/dashboard"} replace />} />
       
-      {/* Protected User Routes */}
-      <Route path="/dashboard" element={
-        <ProtectedRoute>
-          <Layout>
-            <Dashboard />
-          </Layout>
-        </ProtectedRoute>
-      } />
-      
-      {/* User-only Routes */}
-      <Route path="/tasks" element={
-        <ProtectedRoute>
-          <Layout>
-            {user?.role === 'user' ? <Tasks /> : <Navigate to="/dashboard" replace />}
-          </Layout>
-        </ProtectedRoute>
-      } />
+      {/* Protected User Routes - only accessible to users */}
+      {user?.role !== 'admin' && (
+        <>
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Layout>
+                <Dashboard />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/tasks" element={
+            <ProtectedRoute>
+              <Layout>
+                <Tasks />
+              </Layout>
+            </ProtectedRoute>
+          } />
+        </>
+      )}
       
       {/* Admin-only Routes */}
       <Route path="/admin" element={
@@ -73,6 +76,11 @@ function AppRoutes() {
           </Layout>
         </ProtectedRoute>
       } />
+      
+      {/* Catch-all for admins trying to access user routes */}
+      {user?.role === 'admin' && (
+        <Route path="*" element={<Navigate to="/admin" replace />} />
+      )}
     </Routes>
   );
 }

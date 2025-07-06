@@ -231,40 +231,81 @@ import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Get all tasks for authenticated user
-router.get('/', authenticate, async (req, res) => {
+// // Get all tasks for authenticated user
+// // Get all tasks for authenticated user
+// // Get all tasks for authenticated user (without status filtering)
+// router.get('/alltasks', authenticate, async (req, res) => {
+//   try {
+//     // Remove status from query parameters if it exists
+//     const { page = 1, limit = 10, category, sortBy = 'dueDate', sortOrder = 'asc' } = req.query;
+    
+//     // Create base query to find all tasks for the authenticated user
+//     const query = { userEmail: req.user.email };
+    
+//     // Only filter by category if specified
+//     if (category && category !== 'all') {
+//       query.category = category;
+//     }
+    
+//     // Build sort object
+//     const sort = {};
+//     sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+    
+//     // Fetch all tasks without status filtering
+//     const tasks = await Task.find(query)
+//       .sort(sort)
+//       .limit(parseInt(limit))
+//       .skip((parseInt(page) - 1) * parseInt(limit));
+    
+//     const total = await Task.countDocuments(query);
+
+//     res.json({
+//       success: true,
+//       tasks,
+//       pagination: {
+//         page: parseInt(page),
+//         limit: parseInt(limit),
+//         total,
+//         pages: Math.ceil(total / limit)
+//       }
+//     });
+//   } catch (error) {
+//     console.error('Get tasks error:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Server error'
+//     });
+//   }
+// });
+
+
+router.get('/alltasks', authenticate, async (req, res) => {
   try {
-    const { page = 1, limit = 10, status, category} = req.query;
+    console.log('User email making request:', req.user.email); // Verify user email
     
     const query = { userEmail: req.user.email };
+    console.log('MongoDB query being used:', query);
     
-    // Add filters
-    if (status && status !== 'all') {
-      query.status = status;
-    }
+    // Test with a direct find() to verify connection
+    const testTasks = await Task.find({});
+    console.log('All tasks in DB (no filter):', testTasks);
     
-    if (category && category !== 'all') {
-      query.category = category;
-    }
-    
-    const tasks = await Task.find(query)
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
-    
-    const total = await Task.countDocuments(query);
+    // Now try with user filter
+    const tasks = await Task.find(query);
+    console.log('Tasks found for user:', tasks);
     
     res.json({
       success: true,
       tasks,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / limit)
+        page: 1,
+        limit: tasks.length,
+        total: tasks.length,
+        pages: 1
       }
     });
   } catch (error) {
-    console.error('Get tasks error:', error);
+    console.error('Error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -357,7 +398,7 @@ router.put('/:id', authenticate, [
 
     const task = await Task.findOne({ 
       _id: req.params.id, 
-      userEmail: req.user.email // Changed from userId to userEmail
+      userEmail: req.user.email
     });
     
     if (!task) {
@@ -402,7 +443,7 @@ router.delete('/:id', authenticate, async (req, res) => {
   try {
     const task = await Task.findOne({ 
       _id: req.params.id, 
-      userEmail: req.user.email // Changed from userId to userEmail
+      userEmail: req.user.email
     });
     
     if (!task) {
@@ -432,7 +473,7 @@ router.get('/:id', authenticate, async (req, res) => {
   try {
     const task = await Task.findOne({ 
       _id: req.params.id, 
-      userEmail: req.user.email // Changed from userId to userEmail
+      userEmail: req.user.email 
     });
     
     if (!task) {

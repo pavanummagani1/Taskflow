@@ -26,68 +26,86 @@ function Tasks() {
     filterAndSortTasks();
   }, [tasks, searchTerm, filterStatus, filterCategory, sortBy, sortOrder]);
 
-  const fetchTasks = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get('https://taskflow-wxqj.onrender.com/api/tasks');
-      setTasks(response.data.tasks);
-    } catch (error) {
-      console.error('Error fetching tasks:', error);
-      toast.error('Failed to fetch tasks');
-    } finally {
-      setLoading(false);
+const fetchTasks = async () => {
+  setLoading(true);
+  try {
+    const response = await axios.get('https://taskflow-wxqj.onrender.com/api/tasks/alltasks');
+    
+    // Debug log to verify all tasks are received
+    console.log('All tasks received:', response.data.tasks);
+    
+    setTasks(response.data.tasks);
+    
+    // Reset filters to show all tasks
+    setFilterStatus('all');
+    setFilterCategory('all');
+    setSearchTerm('');
+    
+  } catch (error) {
+    console.error('Error fetching tasks:', error);
+    toast.error('Failed to fetch tasks');
+  } finally {
+    setLoading(false);
+  }
+};
+
+const filterAndSortTasks = () => {
+  let filtered = [...tasks];
+
+  console.log('Total tasks before filtering:', filtered.length);
+  console.log('Current filter status:', filterStatus);
+
+  // Apply search filter
+  if (searchTerm) {
+    filtered = filtered.filter(task =>
+      task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      task.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }
+
+  // Apply status filter only if not 'all'
+  if (filterStatus !== 'all') {
+    filtered = filtered.filter(task => task.status === filterStatus);
+  }
+
+  // Apply category filter only if not 'all'
+  if (filterCategory !== 'all') {
+    filtered = filtered.filter(task => task.category === filterCategory);
+  }
+
+  console.log('Tasks after filtering:', filtered);
+
+  // Sorting
+  filtered.sort((a, b) => {
+    let aValue, bValue;
+
+    switch (sortBy) {
+      case 'title':
+        aValue = a.title.toLowerCase();
+        bValue = b.title.toLowerCase();
+        break;
+      case 'dueDate':
+        aValue = new Date(a.dueDate);
+        bValue = new Date(b.dueDate);
+        break;
+      case 'status':
+        aValue = a.status;
+        bValue = b.status;
+        break;
+      case 'category':
+        aValue = a.category;
+        bValue = b.category;
+        break;
+      default:
+        aValue = a.createdAt;
+        bValue = b.createdAt;
     }
-  };
 
-  const filterAndSortTasks = () => {
-    let filtered = [...tasks];
+    return sortOrder === 'asc' ? (aValue > bValue ? 1 : -1) : (aValue < bValue ? 1 : -1);
+  });
 
-    if (searchTerm) {
-      filtered = filtered.filter(task =>
-        task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        task.description.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    if (filterStatus !== 'all') {
-      filtered = filtered.filter(task => task.status === filterStatus);
-    }
-
-    if (filterCategory !== 'all') {
-      filtered = filtered.filter(task => task.category === filterCategory);
-    }
-
-    filtered.sort((a, b) => {
-      let aValue, bValue;
-
-      switch (sortBy) {
-        case 'title':
-          aValue = a.title.toLowerCase();
-          bValue = b.title.toLowerCase();
-          break;
-        case 'dueDate':
-          aValue = new Date(a.dueDate);
-          bValue = new Date(b.dueDate);
-          break;
-        case 'status':
-          aValue = a.status;
-          bValue = b.status;
-          break;
-        case 'category':
-          aValue = a.category;
-          bValue = b.category;
-          break;
-        default:
-          aValue = a.createdAt;
-          bValue = b.createdAt;
-      }
-
-      return sortOrder === 'asc' ? (aValue > bValue ? 1 : -1) : (aValue < bValue ? 1 : -1);
-    });
-
-    setFilteredTasks(filtered);
-  };
-
+  setFilteredTasks(filtered);
+};
   const handleCreateTask = () => {
     setEditingTask(null);
     setShowModal(true);
@@ -119,10 +137,7 @@ function Tasks() {
     try {
       const updatedTask = { ...taskToUpdate, status: newStatus };
       await axios.put(`https://taskflow-wxqj.onrender.com/api/tasks/${taskId}`, updatedTask);
-
-      // Reset filter to show all statuses after update
       setFilterStatus('all');
-
       await fetchTasks();
       toast.success(`Task marked as ${newStatus}`);
     } catch (error) {
@@ -199,9 +214,12 @@ function Tasks() {
           <select
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
+            onChange={(e) => {
+              console.log('Status filter changed to:', e.target.value);
+              setFilterStatus(e.target.value);
+            }}
           >
-            <option value="all">All Status</option>
+            <option value="all">All Tasks</option>
             <option value="pending">Pending</option>
             <option value="completed">Completed</option>
             <option value="overdue">Overdue</option>

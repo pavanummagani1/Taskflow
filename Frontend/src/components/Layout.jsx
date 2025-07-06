@@ -30,16 +30,16 @@ export default function Layout({ children }) {
     setSidebarOpen(false);
   };
 
-  const navigation = [
+ const navigation = [
+  ...(user?.role === 'user' ? [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    ...(user?.role === 'user' ? [
-      { name: 'Tasks', href: '/tasks', icon: CheckSquare }
-    ] : []),
-    ...(user?.role === 'admin' ? [
-      { name: 'User Management', href: '/admin/users', icon: Users },
-      { name: 'Admin Panel', href: '/admin', icon: Shield }
-    ] : []),
-  ];
+    { name: 'Tasks', href: '/tasks', icon: CheckSquare }
+  ] : []),
+  ...(user?.role === 'admin' ? [
+    { name: 'Admin Panel', href: '/admin', icon: Shield },
+    { name: 'User Management', href: '/admin/users', icon: Users }
+  ] : []),
+];
 
   const isActive = (href) => location.pathname === href;
 

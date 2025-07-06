@@ -23,23 +23,34 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
 
+  console.log(auditLogs)
   useEffect(() => {
     fetchAdminData();
   }, []);
 
   const fetchAdminData = async () => {
     try {
-      const [usersRes, tasksRes, auditRes, statsRes] = await Promise.all([
-        axios.get('https://taskflow-wxqj.onrender.com/api/admin/users'),
-        axios.get('https://taskflow-wxqj.onrender.com/api/admin/tasks'),
-        axios.get('https://taskflow-wxqj.onrender.com/api/admin/audit-logs'),
-        axios.get('https://taskflow-wxqj.onrender.com/api/admin/stats')
-      ]);
+    const [usersRes, tasksRes, auditRes, statsRes] = await Promise.all([
+      axios.get('https://taskflow-wxqj.onrender.com/api/admin/users'),
+      axios.get('https://taskflow-wxqj.onrender.com/api/admin/tasks'),
+      axios.get('https://taskflow-wxqj.onrender.com/api/admin/audit-logs?populate=user'),
+      axios.get('https://taskflow-wxqj.onrender.com/api/admin/stats')
+    ]);
 
-      setUsers(usersRes.data.users);
-      setTasks(tasksRes.data.tasks);
-      setAuditLogs(auditRes.data.logs);
-      setStats(statsRes.data);
+    // Process audit logs to ensure user information is available
+    const processedLogs = auditRes.data.logs.map(log => {
+      // If user is not populated, try to find it in the users response
+      if (!log.user && log.userId) {
+        const foundUser = usersRes.data.users.find(u => u._id === log.userId);
+        return { ...log, user: foundUser || null };
+      }
+      return log;
+    });
+
+    setUsers(usersRes.data.users);
+    setTasks(tasksRes.data.tasks);
+    setAuditLogs(processedLogs);
+    setStats(statsRes.data);
 
       // Generate user activity data
       const userActivity = usersRes.data.users.map(user => {
@@ -189,7 +200,7 @@ export default function AdminDashboard() {
           >
             User Monitoring
           </button>
-          <button
+          {/* <button
             onClick={() => setActiveTab('tasks')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'tasks'
@@ -198,7 +209,7 @@ export default function AdminDashboard() {
             }`}
           >
             Task Monitoring
-          </button>
+          </button> */}
           <button
             onClick={() => setActiveTab('audit')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
@@ -492,72 +503,79 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {activeTab === 'audit' && (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-medium text-gray-900">Audit Logs</h2>
-              <ExportButtons 
-                data={auditLogs} 
-                filename="audit-logs"
-                type="audit"
-              />
-            </div>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Action
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    User
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Resource
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Timestamp
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Details
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {auditLogs.map((log) => (
-                  <tr key={log._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        log.action === 'CREATE' 
-                          ? 'bg-green-100 text-green-800' 
-                          : log.action === 'UPDATE'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {log.action}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {log.user?.name || 'System'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {log.resource}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {format(new Date(log.timestamp), 'MMM dd, yyyy HH:mm')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {log.details}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+{activeTab === 'audit' && (
+  <div className="bg-white rounded-lg shadow-md overflow-hidden">
+    {/* ... existing header code ... */}
+    <div className="overflow-x-auto">
+      <table className="w-full">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Action
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              User
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Role
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Timestamp
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Details
+            </th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {auditLogs.map((log) => (
+            <tr key={log._id} className="hover:bg-gray-50">
+              <td className="px-6 py-4 whitespace-nowrap">
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                  log.action === 'CREATE' 
+                    ? 'bg-green-100 text-green-800' 
+                    : log.action === 'UPDATE'
+                    ? 'bg-blue-100 text-blue-800'
+                    : 'bg-red-100 text-red-800'
+                }`}>
+                  {log.action}
+                </span>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="flex items-center">
+                  {log.user ? (
+                    <>
+                      <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-blue-600 text-xs font-medium">
+                          {log.user.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="ml-3">
+                        <div className="text-sm font-medium text-gray-900">{log.user.name}</div>
+                        <div className="text-xs text-gray-500">{log.user.email}</div>
+                      </div>
+                    </>
+                  ) : (
+                    <span className="text-sm text-gray-500">System</span>
+                  )}
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {log.user?.resource || 'User'}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {format(new Date(log.timestamp), 'MMM dd, yyyy HH:mm')}
+              </td>
+              <td className="px-6 py-4 text-sm text-gray-500">
+                {log.details}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+)}
     </div>
   );
 }
