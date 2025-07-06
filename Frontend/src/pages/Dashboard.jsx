@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Calendar, CheckCircle, Clock, AlertCircle, TrendingUp } from 'lucide-react';
 import axios from 'axios';
-import { format, isToday, subDays } from 'date-fns';
+import { format, isToday, subDays, startOfDay, endOfDay } from 'date-fns';
 import ExportButtons from '../components/ExportButtons';
 
 export default function Dashboard() {
@@ -16,11 +16,10 @@ export default function Dashboard() {
   });
   const [tasks, setTasks] = useState([]);
   const [todayTasks, setTodayTasks] = useState([]);
+  const [upcomingTasks, setUpcomingTasks] = useState([]);
   const [completionData, setCompletionData] = useState([]);
   const [categoryData, setCategoryData] = useState([]);
-  const [statusData, setStatusData] = useState([]);
   const [loading, setLoading] = useState(true);
-  console.log(tasks)
 
   useEffect(() => {
     fetchDashboardData();
@@ -29,35 +28,55 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       const [tasksRes, statsRes] = await Promise.all([
-        axios.get('https://taskflow-wxqj.onrender.com/api/tasks/alltasks'),
+        axios.get('https://taskflow-wxqj.onrender.com/api/tasks?limit=1000'),
         axios.get('https://taskflow-wxqj.onrender.com/api/tasks/stats')
       ]);
 
-      const allTasks = tasksRes.data.tasks;
+      const allTasks = tasksRes.data.tasks || [];
       setTasks(allTasks);
       setStats(statsRes.data);
 
-      // Filter tasks for today only
+      // Filter tasks for different sections
+      const today = new Date();
       const todayTasksFiltered = allTasks.filter(task => 
         isToday(new Date(task.dueDate))
       );
       setTodayTasks(todayTasksFiltered);
 
-      // Generate completion data for last 7 days
+      const upcomingTasksFiltered = allTasks.filter(task => 
+        !isToday(new Date(task.dueDate)) && 
+        new Date(task.dueDate) > today
+      ).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+      setUpcomingTasks(upcomingTasksFiltered.slice(0, 5));
+
+      // Generate completion data for last 7 days with REAL data
       const last7Days = [];
       for (let i = 6; i >= 0; i--) {
-        const date = subDays(new Date(), i);
-        const dateStr = format(date, 'yyyy-MM-dd');
+        const date = subDays(today, i);
+        const dayStart = startOfDay(date);
+        const dayEnd = endOfDay(date);
         
-        const completedCount = allTasks.filter(task => 
-          task.status === 'completed' && 
-          task.completedAt &&
-          format(new Date(task.completedAt), 'yyyy-MM-dd') === dateStr
-        ).length;
+        // Get tasks that were completed on this specific day
+        const completedOnDay = allTasks.filter(task => {
+          if (task.status !== 'completed' || !task.completedAt) return false;
+          const completedDate = new Date(task.completedAt);
+          return completedDate >= dayStart && completedDate <= dayEnd;
+        }).length;
+
+        // Get tasks that were due on this day
+        const tasksForDay = allTasks.filter(task => {
+          const taskDate = new Date(task.dueDate);
+          return taskDate >= dayStart && taskDate <= dayEnd;
+        });
+
+        const pendingCount = tasksForDay.filter(task => task.status === 'pending').length;
+        const overdueCount = tasksForDay.filter(task => task.status === 'overdue').length;
         
         last7Days.push({
           date: format(date, 'MMM dd'),
-          completed: completedCount
+          completed: completedOnDay,
+          pending: pendingCount,
+          overdue: overdueCount
         });
       }
       setCompletionData(last7Days);
@@ -72,14 +91,6 @@ export default function Dashboard() {
         .map(([name, value]) => ({ name, value }))
         .sort((a, b) => b.value - a.value);
       setCategoryData(categoryArray);
-
-      // Generate status data for pie chart
-      const statusArray = [
-        { name: 'Completed', value: statsRes.data.completed, color: '#10B981' },
-        { name: 'Pending', value: statsRes.data.pending, color: '#F59E0B' },
-        { name: 'Overdue', value: statsRes.data.overdue, color: '#EF4444' }
-      ].filter(item => item.value > 0);
-      setStatusData(statusArray);
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -162,7 +173,7 @@ export default function Dashboard() {
         {/* Completion Chart */}
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Tasks Completed (Last 7 Days)</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Daily Task Activity (Last 7 Days)</h2>
             <TrendingUp className="h-5 w-5 text-gray-500" />
           </div>
           <ResponsiveContainer width="100%" height={300}>
@@ -171,99 +182,118 @@ export default function Dashboard() {
               <XAxis dataKey="date" />
               <YAxis />
               <Tooltip />
-              <Bar dataKey="completed" fill="#3B82F6" />
+              <Bar dataKey="completed" fill="#10B981" name="Completed" />
+              <Bar dataKey="pending" fill="#F59E0B" name="Pending" />
+              <Bar dataKey="overdue" fill="#EF4444" name="Overdue" />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Task Status Chart */}
+        {/* Category Chart */}
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Task Status Overview</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Tasks by Category</h2>
             <ExportButtons 
-              data={statusData} 
-              filename="task-status"
+              data={categoryData} 
+              filename="task-categories"
               type="chart"
             />
           </div>
-          {statusData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={statusData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {statusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex items-center justify-center h-[300px] text-gray-500">
-              No tasks to display
-            </div>
-          )}
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={categoryData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {categoryData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Today's Tasks Section */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Tasks Due Today</h2>
-          <ExportButtons 
-            data={todayTasks} 
-            filename="today-tasks"
-            type="tasks"
-          />
-        </div>
-        <div className="space-y-3">
-          {todayTasks.length > 0 ? (
-            todayTasks.map((task) => (
-              <div key={task._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border-l-4 border-blue-500">
-                <div className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full ${
-                    task.status === 'completed' ? 'bg-green-500' : 
-                    task.status === 'overdue' ? 'bg-red-500' : 'bg-yellow-500'
-                  }`} />
-                  <div>
-                    <p className="font-medium text-gray-900">{task.title}</p>
-                    <p className="text-sm text-gray-500">{task.category}</p>
-                    {task.description && (
-                      <p className="text-sm text-gray-600 mt-1">{task.description}</p>
-                    )}
+      {/* Tasks Sections */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Today's Tasks */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Tasks Due Today</h2>
+            <ExportButtons 
+              data={todayTasks} 
+              filename="today-tasks"
+              type="tasks"
+            />
+          </div>
+          <div className="space-y-3">
+            {todayTasks.length > 0 ? (
+              todayTasks.map((task) => (
+                <div key={task._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-3 h-3 rounded-full ${
+                      task.status === 'completed' ? 'bg-green-500' : 
+                      task.status === 'pending' ? 'bg-yellow-500' : 'bg-red-500'
+                    }`} />
+                    <div>
+                      <p className="font-medium text-gray-900">{task.title}</p>
+                      <p className="text-sm text-gray-500">{task.category}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="text-right">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  <span className={`px-2 py-1 rounded-full text-xs ${
                     task.status === 'completed' 
                       ? 'bg-green-100 text-green-800' 
-                      : task.status === 'overdue'
-                      ? 'bg-red-100 text-red-800'
-                      : 'bg-yellow-100 text-yellow-800'
+                      : task.status === 'pending'
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-red-100 text-red-800'
                   }`}>
                     {task.status}
                   </span>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Due: {format(new Date(task.dueDate), 'h:mm a')}
-                  </p>
                 </div>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-12">
-              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500 text-lg">No tasks due today</p>
-              <p className="text-gray-400 text-sm">Great job staying on top of your tasks!</p>
-            </div>
-          )}
+              ))
+            ) : (
+              <p className="text-gray-500 text-center py-8">No tasks due today</p>
+            )}
+          </div>
+        </div>
+
+        {/* Upcoming Tasks */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Upcoming Tasks</h2>
+            <ExportButtons 
+              data={upcomingTasks} 
+              filename="upcoming-tasks"
+              type="tasks"
+            />
+          </div>
+          <div className="space-y-3">
+            {upcomingTasks.length > 0 ? (
+              upcomingTasks.map((task) => (
+                <div key={task._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full bg-blue-500" />
+                    <div>
+                      <p className="font-medium text-gray-900">{task.title}</p>
+                      <p className="text-sm text-gray-500">{task.category}</p>
+                    </div>
+                  </div>
+                  <span className="text-sm text-gray-500">
+                    {format(new Date(task.dueDate), 'MMM dd')}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500 text-center py-8">No upcoming tasks</p>
+            )}
+          </div>
         </div>
       </div>
     </div>

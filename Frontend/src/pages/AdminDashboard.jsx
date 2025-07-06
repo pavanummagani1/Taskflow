@@ -37,9 +37,7 @@ export default function AdminDashboard() {
       axios.get('https://taskflow-wxqj.onrender.com/api/admin/stats')
     ]);
 
-    // Process audit logs to ensure user information is available
     const processedLogs = auditRes.data.logs.map(log => {
-      // If user is not populated, try to find it in the users response
       if (!log.user && log.userId) {
         const foundUser = usersRes.data.users.find(u => u._id === log.userId);
         return { ...log, user: foundUser || null };
@@ -200,16 +198,6 @@ export default function AdminDashboard() {
           >
             User Monitoring
           </button>
-          {/* <button
-            onClick={() => setActiveTab('tasks')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'tasks'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Task Monitoring
-          </button> */}
           <button
             onClick={() => setActiveTab('audit')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${

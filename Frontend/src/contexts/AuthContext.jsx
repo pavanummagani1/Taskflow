@@ -15,7 +15,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing token on app load
+    // Check for existing token
     const token = localStorage.getItem('token');
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -23,44 +23,18 @@ export function AuthProvider({ children }) {
     } else {
       setLoading(false);
     }
-
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
-          const token = await firebaseUser.getIdToken();
-          localStorage.setItem('token', token);
-          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          
-          // Get user data from backend
-          const response = await axios.get('https://taskflow-wxqj.onrender.com/api/auth/profile');
-          setUser(response.data.user);
-        } catch (error) {
-          console.error('Error fetching user profile:', error);
-          toast.error('Failed to load user profile');
-        }
-      } else {
-        // Only clear user if not already logged in with JWT
-        if (!localStorage.getItem('token')) {
-          setUser(null);
-          localStorage.removeItem('token');
-          delete axios.defaults.headers.common['Authorization'];
-        }
-      }
-      setLoading(false);
-    });
-
-    return unsubscribe;
   }, []);
 
   const fetchUserProfile = async () => {
     try {
       const response = await axios.get('https://taskflow-wxqj.onrender.com/api/auth/profile');
-      setUser(response.data.user);
+      if (response.data.success) {
+        setUser(response.data.user);
+      }
     } catch (error) {
       console.error('Error fetching user profile:', error);
       localStorage.removeItem('token');
       delete axios.defaults.headers.common['Authorization'];
-      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -75,42 +49,29 @@ export function AuthProvider({ children }) {
       const response = await axios.post('https://taskflow-wxqj.onrender.com/api/auth/google', { token });
       
       if (response.data.success) {
+        const { token: jwtToken, user } = response.data;
+        localStorage.setItem('token', jwtToken);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${jwtToken}`;
+        setUser(user);
         toast.success('Logged in successfully!');
         return true;
       }
     } catch (error) {
       console.error('Google login error:', error);
-      if (error.response?.data?.message) {
-        toast.error(error.response.data.message);
-      } else {
-        toast.error('Failed to login with Google');
-      }
+      toast.error('Failed to login with Google');
       return false;
     }
   };
 
-  const loginWithEmail = async (email, password, isAdminLogin = false) => {
+  const loginWithEmail = async (email, password) => {
     try {
       const response = await axios.post('https://taskflow-wxqj.onrender.com/api/auth/login', { email, password });
       
       if (response.data.success) {
-        const { token, user: userData } = response.data;
-        
-        // Check if admin login is required but user is not admin
-        if (isAdminLogin && userData.role !== 'admin') {
-          toast.error('Access denied. Admin privileges required.');
-          return false;
-        }
-        
-        // Check if user is trying to access user portal but is admin
-        if (!isAdminLogin && userData.role === 'admin') {
-          toast.error('Admin accounts must use the Admin Portal.');
-          return false;
-        }
-        
+        const { token, user } = response.data;
         localStorage.setItem('token', token);
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        setUser(userData);
+        setUser(user);
         toast.success('Logged in successfully!');
         return true;
       }
@@ -126,7 +87,11 @@ export function AuthProvider({ children }) {
       const response = await axios.post('https://taskflow-wxqj.onrender.com/api/auth/register', userData);
       
       if (response.data.success) {
-        toast.success(`${userData.role === 'admin' ? 'Admin' : 'User'} account created successfully!`);
+        const { token, user } = response.data;
+        localStorage.setItem('token', token);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        setUser(user);
+        toast.success('Account created successfully!');
         return true;
       }
     } catch (error) {
@@ -138,10 +103,9 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     try {
-      await signOut(auth);
-      setUser(null);
       localStorage.removeItem('token');
       delete axios.defaults.headers.common['Authorization'];
+      setUser(null);
       toast.success('Logged out successfully!');
     } catch (error) {
       console.error('Logout error:', error);
