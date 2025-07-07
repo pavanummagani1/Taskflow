@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 import TaskModal from '../components/TaskModal';
 import ExportButtons from '../components/ExportButtons';
 
-const BASE_URL = import.meta.env.REACT_APP_BASE_URL;
+const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 export default function Tasks() {
   const [tasks, setTasks] = useState([]);
