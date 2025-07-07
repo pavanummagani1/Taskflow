@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const BASE_URL = process.env.REACT_APP_BASE_URL;
+const BASE_URL = import.meta.env.REACT_APP_BASE_URL;
 
 export default function TaskModal({ task, onClose, onSave }) {
   const [formData, setFormData] = useState({
