@@ -8,7 +8,8 @@ const router = express.Router();
 // Get all tasks for authenticated user
 router.get('/', authenticate, async (req, res) => {
   try {
-    const { page = 1, limit = 1000, status, category, sortBy = 'dueDate', sortOrder = 'asc' } = req.query;
+    const { page = 1, limit = 1000, status, category, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
+
     
     // Update overdue tasks first
     await Task.updateMany(

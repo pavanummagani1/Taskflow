@@ -34,7 +34,7 @@ export default function Dashboard() {
         axios.get(`${BASE_URL}/api/tasks/stats`)
       ]);
 
-      const allTasks = tasksRes.data.tasks || [];
+      const allTasks = (tasksRes.data.tasks || []).reverse
       setTasks(allTasks);
       setStats(statsRes.data);
 

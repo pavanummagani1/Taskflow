@@ -17,8 +17,9 @@ export default function Tasks() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
-  const [sortBy, setSortBy] = useState('dueDate');
-  const [sortOrder, setSortOrder] = useState('asc');
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
+
 
   useEffect(() => {
     fetchTasks();
@@ -48,7 +49,7 @@ export default function Tasks() {
 
     // Apply search filter
     if (searchTerm) {
-      filtered = filtered.filter(task => 
+      filtered = filtered.filter(task =>
         task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase()))
       );
@@ -128,15 +129,15 @@ export default function Tasks() {
 
   const handleToggleStatus = async (taskId, currentStatus) => {
     const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
-    
+
     try {
       const response = await axios.put(`${BASE_URL}/api/tasks/${taskId}`, { status: newStatus });
       if (response.data.success) {
         // Update the task in the state with the new status and completedAt
-        setTasks(prevTasks => 
-          prevTasks.map(task => 
-            task._id === taskId ? { 
-              ...task, 
+        setTasks(prevTasks =>
+          prevTasks.map(task =>
+            task._id === taskId ? {
+              ...task,
               status: newStatus,
               completedAt: newStatus === 'completed' ? new Date().toISOString() : null,
               updatedAt: new Date().toISOString()
@@ -154,8 +155,8 @@ export default function Tasks() {
   const handleTaskSaved = (savedTask) => {
     if (editingTask) {
       // Update existing task
-      setTasks(prevTasks => 
-        prevTasks.map(task => 
+      setTasks(prevTasks =>
+        prevTasks.map(task =>
           task._id === savedTask._id ? savedTask : task
         )
       );
@@ -209,8 +210,8 @@ export default function Tasks() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-3xl font-bold text-gray-900">Tasks</h1>
         <div className="flex gap-2">
-          <ExportButtons 
-            data={filteredTasks} 
+          <ExportButtons
+            data={filteredTasks}
             filename="tasks"
             type="tasks"
           />
